@@ -56,7 +56,7 @@ export class LineScanner {
       tokens.push(new Token(':', pos, pos + 1, TokenKind.Operator));
 
       text = ' ' + line.substr(pos + 1); // replace the colon with a space for next match
-      if (!text) {
+      if (text === ' ') {
         return tokens; // end of the line, return
       }
     }
@@ -89,8 +89,8 @@ export class LineScanner {
       const operandMatch = /^(\s)([^\s]+)/i.exec(text); // match everything until a space
       if (operandMatch) {
         const space = operandMatch[1].length;
-        opcode = operandMatch[2];
-        tokens.push(new Token(opcode, pos + space, pos + space + opcode.length, TokenKind.Number));
+        const operand = operandMatch[2];
+        tokens.push(new Token(operand, pos + space, pos + space + operand.length, TokenKind.Number));
 
         pos += operandMatch[0].length;
         text = line.substr(pos);
