@@ -1,55 +1,5 @@
-import { loadavg } from 'os';
-import { compileFunction } from 'vm';
-import { Token, TokenKind } from '../src/line-common';
+import { inherentOpcodes, operandOpcodes, Token, TokenKind } from '../src/line-common';
 import { LineScanner } from '../src/line-parser';
-
-const inherentOpcodes = [
-  'abx',
-  'asla', 'aslb', 'asld', 'asra', 'asrb', 'asrd',
-  'clra', 'clrb', 'clrd', 'clre', 'clrf', 'clrw',
-  'coma', 'comb', 'comd', 'come', 'comf', 'comw',
-  'daa',
-  'deca', 'decb', 'decd', 'dece', 'decf', 'decw',
-  'inca', 'incb', 'incd', 'ince', 'incf', 'incw',
-  'lsla', 'lslb', 'lsld', 'lsra', 'lsrb', 'lsrd', 'lsrw',
-  'mul',
-  'nega', 'negb', 'negd',
-  'nop',
-  'pshsw', 'pshuw', 'pulsw', 'puluw',
-  'rola', 'rolb', 'rold', 'rolw', 'rora', 'rorb', 'rord', 'rorw',
-  'rti', 'rts',
-  'sex', 'sexw',
-  'swi', 'swi2', 'swi3',
-  'sync',
-  'tsta', 'tstb', 'tstd', 'tste', 'tstf', 'tstw',
-];
-
-const opcodes = [
-  'adca', 'adcb', 'adcd', 'adcr',
-  'adda', 'addb', 'addd', 'adde', 'addf', 'addr', 'addw',
-  'aim',
-  'anda', 'andb', 'andcc', 'andd', 'andr',
-  'asl', 'asr', 'band', 'biand', 'beor', 'bieor',
-  'bita', 'bitb', 'bitd', 'bitmd',
-  'bor', 'bior',
-  'clr',
-  'cmpa', 'cmpb', 'cmpd', 'cmpe', 'cmpf', 'cmpr', 'cmps', 'cmpu', 'cmpw', 'cmpx', 'cmpu',
-  'com', 'cwai', 'dec', 'divd', 'divq', 'eim',
-  'eora', 'eorb', 'eord', 'eorr', 'exg', 'inc',
-  'jmp', 'jsr',
-  'lda', 'ldb', 'ldd', 'lde', 'ldf', 'ldmd', 'ldq', 'lds', 'ldu', 'ldw', 'ldx', 'ldy',
-  'ldbt',
-  'leas', 'leau', 'leax', 'leay',
-  'lsl', 'lsr', 'muld', 'neg', 'oim',
-  'ora', 'orb', 'orcc', 'ord', 'orr',
-  'pshu', 'pshs', 'pulu', 'puls',
-  'rol', 'ror',
-  'sbca', 'sbcb', 'sbcd', 'sbcr',
-  'sta', 'stb', 'std', 'ste', 'stf', 'stq', 'sts', 'stu', 'stw', 'stx', 'sty',
-  'stbt',
-  'suba', 'subb', 'subd', 'sube', 'subf', 'subr', 'subw',
-  'tfm', 'tim', 'tst'
-];
 
 describe('LineScanner', () => {
   it('Can create', () => {
@@ -486,141 +436,233 @@ describe('LineScanner', () => {
     expect(tokens[2]).toEqual(expectedCommentToken);
   });
 
-  inherentOpcodes.forEach(opcode => {
+  let opcode = 'abx';
 
-    it(`Inherent opcode ${opcode} returns opcode token`, () => {
-      const expectedOpcode = opcode;
-      const line = ` ${expectedOpcode}`;
-      const expectedOpcodeToken = new Token(
-        expectedOpcode,
-        line.indexOf(expectedOpcode),
-        line.indexOf(expectedOpcode) + expectedOpcode.length,
-        TokenKind.OpCode);
-      const lineScanner = new LineScanner();
+  it(`Inherent opcode ${opcode} returns opcode token`, () => {
+    const expectedOpcode = opcode;
+    const line = ` ${expectedOpcode}`;
+    const expectedOpcodeToken = new Token(
+      expectedOpcode,
+      line.indexOf(expectedOpcode),
+      line.indexOf(expectedOpcode) + expectedOpcode.length,
+      TokenKind.OpCode);
+    const lineScanner = new LineScanner();
 
-      const tokens = lineScanner.parse(line);
+    const tokens = lineScanner.parse(line);
 
-      expect(tokens.length).toBe(1);
-      expect(tokens[0]).toEqual(expectedOpcodeToken);
-    });
-
-    it(`Inherent opcode ${opcode}, comment returns opcode, comment tokens`, () => {
-      const expectedOpcode = opcode;
-      const expectedComment = 'Hello there';
-      const commentString = `${expectedComment}`;
-      const line = ` ${expectedOpcode} ${commentString}`;
-      const expectedOpcodeToken = new Token(
-        expectedOpcode,
-        line.indexOf(expectedOpcode),
-        line.indexOf(expectedOpcode) + expectedOpcode.length,
-        TokenKind.OpCode);
-      const expectedCommentToken = new Token(
-        expectedComment,
-        line.indexOf(commentString),
-        line.indexOf(commentString) + commentString.length,
-        TokenKind.Comment);
-      const lineScanner = new LineScanner();
-
-      const tokens = lineScanner.parse(line);
-
-      expect(tokens.length).toBe(2);
-      expect(tokens[0]).toEqual(expectedOpcodeToken);
-      expect(tokens[1]).toEqual(expectedCommentToken);
-    });
-
-    it(`Symbol, inherent opcode ${opcode}, comment returns symbol, opcode, comment tokens`, () => {
-      const expectedSymbol = 'GlobalSymbol';
-      const expectedOpcode = opcode;
-      const expectedComment = 'Hello there';
-      const commentString = `${expectedComment}`;
-      const line = `${expectedSymbol} ${expectedOpcode} ${commentString}`;
-      const expectedSymbolToken = new Token(
-        expectedSymbol,
-        line.indexOf(expectedSymbol),
-        line.indexOf(expectedSymbol) + expectedSymbol.length,
-        TokenKind.GlobalSymbol);
-      const expectedOpcodeToken = new Token(
-        expectedOpcode,
-        line.indexOf(expectedOpcode),
-        line.indexOf(expectedOpcode) + expectedOpcode.length,
-        TokenKind.OpCode);
-      const expectedCommentToken = new Token(
-        expectedComment,
-        line.indexOf(commentString),
-        line.indexOf(commentString) + commentString.length,
-        TokenKind.Comment);
-      const lineScanner = new LineScanner();
-
-      const tokens = lineScanner.parse(line);
-
-      expect(tokens.length).toBe(3);
-      expect(tokens[0]).toEqual(expectedSymbolToken);
-      expect(tokens[1]).toEqual(expectedOpcodeToken);
-      expect(tokens[2]).toEqual(expectedCommentToken);
-    });
-
-    it(`Inherent opcode ${opcode}, * comment returns inherent opcode, comment tokens`, () => {
-      const expectedOpcode = opcode;
-      const expectedComment = 'Hello there';
-      const commentString = `* ${expectedComment}`;
-
-      const line = ` ${expectedOpcode} ${commentString}`;
-      const expectedOpcodeToken = new Token(
-        expectedOpcode,
-        line.indexOf(expectedOpcode),
-        line.indexOf(expectedOpcode) + expectedOpcode.length,
-        TokenKind.OpCode);
-      const expectedCommentToken = new Token(
-        expectedComment,
-        line.indexOf(commentString),
-        line.indexOf(commentString) + commentString.length,
-        TokenKind.Comment);
-      const lineScanner = new LineScanner();
-
-      const tokens = lineScanner.parse(line);
-
-      expect(tokens.length).toBe(2);
-      expect(tokens[0]).toEqual(expectedOpcodeToken);
-      expect(tokens[1]).toEqual(expectedCommentToken);
-    });
-
-    it(`Symbol, inherent opcode ${opcode}, comment returns symbol, opcode, comment tokens`, () => {
-      const expectedSymbol = 'GlobalSymbol';
-      const expectedOpcode = opcode;
-      const expectedComment = 'Hello there';
-      const commentString = `;${expectedComment}`;
-      const line = `${expectedSymbol}:${expectedOpcode} ${commentString}`;
-      const expectedSymbolToken = new Token(
-        expectedSymbol,
-        line.indexOf(expectedSymbol),
-        line.indexOf(expectedSymbol) + expectedSymbol.length,
-        TokenKind.GlobalSymbol);
-      const expectedColonToken = new Token(
-        ':',
-        line.indexOf(':'),
-        line.indexOf(':') + 1,
-        TokenKind.Operator);
-      const expectedOpcodeToken = new Token(
-        expectedOpcode,
-        line.indexOf(expectedOpcode),
-        line.indexOf(expectedOpcode) + expectedOpcode.length,
-        TokenKind.OpCode);
-      const expectedCommentToken = new Token(
-        expectedComment,
-        line.indexOf(commentString),
-        line.indexOf(commentString) + commentString.length,
-        TokenKind.Comment);
-      const lineScanner = new LineScanner();
-
-      const tokens = lineScanner.parse(line);
-
-      expect(tokens.length).toBe(4);
-      expect(tokens[0]).toEqual(expectedSymbolToken);
-      expect(tokens[1]).toEqual(expectedColonToken);
-      expect(tokens[2]).toEqual(expectedOpcodeToken);
-      expect(tokens[3]).toEqual(expectedCommentToken);
-    });
-
-
+    expect(tokens.length).toBe(1);
+    expect(tokens[0]).toEqual(expectedOpcodeToken);
   });
+
+  it(`Inherent opcode ${opcode}, comment returns opcode, comment tokens`, () => {
+    const expectedOpcode = opcode;
+    const expectedComment = 'Hello there';
+    const commentString = `${expectedComment}`;
+    const line = ` ${expectedOpcode} ${commentString}`;
+    const expectedOpcodeToken = new Token(
+      expectedOpcode,
+      line.indexOf(expectedOpcode),
+      line.indexOf(expectedOpcode) + expectedOpcode.length,
+      TokenKind.OpCode);
+    const expectedCommentToken = new Token(
+      expectedComment,
+      line.indexOf(commentString),
+      line.indexOf(commentString) + commentString.length,
+      TokenKind.Comment);
+    const lineScanner = new LineScanner();
+
+    const tokens = lineScanner.parse(line);
+
+    expect(tokens.length).toBe(2);
+    expect(tokens[0]).toEqual(expectedOpcodeToken);
+    expect(tokens[1]).toEqual(expectedCommentToken);
+  });
+
+  it(`Symbol, inherent opcode ${opcode}, comment returns symbol, opcode, comment tokens`, () => {
+    const expectedSymbol = 'GlobalSymbol';
+    const expectedOpcode = opcode;
+    const expectedComment = 'Hello there';
+    const commentString = `${expectedComment}`;
+    const line = `${expectedSymbol} ${expectedOpcode} ${commentString}`;
+    const expectedSymbolToken = new Token(
+      expectedSymbol,
+      line.indexOf(expectedSymbol),
+      line.indexOf(expectedSymbol) + expectedSymbol.length,
+      TokenKind.GlobalSymbol);
+    const expectedOpcodeToken = new Token(
+      expectedOpcode,
+      line.indexOf(expectedOpcode),
+      line.indexOf(expectedOpcode) + expectedOpcode.length,
+      TokenKind.OpCode);
+    const expectedCommentToken = new Token(
+      expectedComment,
+      line.indexOf(commentString),
+      line.indexOf(commentString) + commentString.length,
+      TokenKind.Comment);
+    const lineScanner = new LineScanner();
+
+    const tokens = lineScanner.parse(line);
+
+    expect(tokens.length).toBe(3);
+    expect(tokens[0]).toEqual(expectedSymbolToken);
+    expect(tokens[1]).toEqual(expectedOpcodeToken);
+    expect(tokens[2]).toEqual(expectedCommentToken);
+  });
+
+  it(`Inherent opcode ${opcode}, * comment returns inherent opcode, comment tokens`, () => {
+    const expectedOpcode = opcode;
+    const expectedComment = 'Hello there';
+    const commentString = `* ${expectedComment}`;
+
+    const line = ` ${expectedOpcode} ${commentString}`;
+    const expectedOpcodeToken = new Token(
+      expectedOpcode,
+      line.indexOf(expectedOpcode),
+      line.indexOf(expectedOpcode) + expectedOpcode.length,
+      TokenKind.OpCode);
+    const expectedCommentToken = new Token(
+      expectedComment,
+      line.indexOf(commentString),
+      line.indexOf(commentString) + commentString.length,
+      TokenKind.Comment);
+    const lineScanner = new LineScanner();
+
+    const tokens = lineScanner.parse(line);
+
+    expect(tokens.length).toBe(2);
+    expect(tokens[0]).toEqual(expectedOpcodeToken);
+    expect(tokens[1]).toEqual(expectedCommentToken);
+  });
+
+  it(`Symbol, inherent opcode ${opcode}, comment returns symbol, opcode, comment tokens`, () => {
+    const expectedSymbol = 'GlobalSymbol';
+    const expectedOpcode = opcode;
+    const expectedComment = 'Hello there';
+    const commentString = `;${expectedComment}`;
+    const line = `${expectedSymbol}:${expectedOpcode} ${commentString}`;
+    const expectedSymbolToken = new Token(
+      expectedSymbol,
+      line.indexOf(expectedSymbol),
+      line.indexOf(expectedSymbol) + expectedSymbol.length,
+      TokenKind.GlobalSymbol);
+    const expectedColonToken = new Token(
+      ':',
+      line.indexOf(':'),
+      line.indexOf(':') + 1,
+      TokenKind.Operator);
+    const expectedOpcodeToken = new Token(
+      expectedOpcode,
+      line.indexOf(expectedOpcode),
+      line.indexOf(expectedOpcode) + expectedOpcode.length,
+      TokenKind.OpCode);
+    const expectedCommentToken = new Token(
+      expectedComment,
+      line.indexOf(commentString),
+      line.indexOf(commentString) + commentString.length,
+      TokenKind.Comment);
+    const lineScanner = new LineScanner();
+
+    const tokens = lineScanner.parse(line);
+
+    expect(tokens.length).toBe(4);
+    expect(tokens[0]).toEqual(expectedSymbolToken);
+    expect(tokens[1]).toEqual(expectedColonToken);
+    expect(tokens[2]).toEqual(expectedOpcodeToken);
+    expect(tokens[3]).toEqual(expectedCommentToken);
+  });
+
+  opcode = 'clr';
+
+  it(`Operand opcode ${opcode}, operand returns opcode, operand tokens`, () => {
+    const expectedOpcode = opcode;
+    const expectedOperand = '42';
+    const line = ` ${expectedOpcode} ${expectedOperand}`;
+    const expectedOpcodeToken = new Token(
+      expectedOpcode,
+      line.indexOf(expectedOpcode),
+      line.indexOf(expectedOpcode) + expectedOpcode.length,
+      TokenKind.OpCode);
+    const expectedOperandToken = new Token(
+      expectedOperand,
+      line.indexOf(expectedOperand),
+      line.indexOf(expectedOperand) + expectedOperand.length,
+      TokenKind.Number);
+    const lineScanner = new LineScanner();
+
+    const tokens = lineScanner.parse(line);
+
+    expect(tokens.length).toBe(2);
+    expect(tokens[0]).toEqual(expectedOpcodeToken);
+    expect(tokens[1]).toEqual(expectedOperandToken);
+  });
+
+  it(`Operand opcode ${opcode}, comment returns opcode, operand, comment tokens`, () => {
+    const expectedOpcode = opcode;
+    const expectedOperand = '42';
+    const expectedComment = 'Hello there';
+    const commentString = `${expectedComment}`;
+    const line = ` ${expectedOpcode} ${expectedOperand} ${commentString}`;
+    const expectedOpcodeToken = new Token(
+      expectedOpcode,
+      line.indexOf(expectedOpcode),
+      line.indexOf(expectedOpcode) + expectedOpcode.length,
+      TokenKind.OpCode);
+    const expectedOperandToken = new Token(
+      expectedOperand,
+      line.indexOf(expectedOperand),
+      line.indexOf(expectedOperand) + expectedOperand.length,
+      TokenKind.Number);
+    const expectedCommentToken = new Token(
+      expectedComment,
+      line.indexOf(commentString),
+      line.indexOf(commentString) + commentString.length,
+      TokenKind.Comment);
+    const lineScanner = new LineScanner();
+
+    const tokens = lineScanner.parse(line);
+
+    expect(tokens.length).toBe(3);
+    expect(tokens[0]).toEqual(expectedOpcodeToken);
+    expect(tokens[1]).toEqual(expectedOperandToken);
+    expect(tokens[2]).toEqual(expectedCommentToken);
+  });
+
+  it(`Symbol, operand opcode ${opcode}, comment returns symbol, opcode, operand, comment tokens`, () => {
+    const expectedSymbol = 'GlobalSymbol';
+    const expectedOpcode = opcode;
+    const expectedOperand = '42';
+    const expectedComment = 'Hello there';
+    const commentString = `${expectedComment}`;
+    const line = `${expectedSymbol} ${expectedOpcode} ${expectedOperand} ${commentString}`;
+    const expectedSymbolToken = new Token(
+      expectedSymbol,
+      line.indexOf(expectedSymbol),
+      line.indexOf(expectedSymbol) + expectedSymbol.length,
+      TokenKind.GlobalSymbol);
+    const expectedOpcodeToken = new Token(
+      expectedOpcode,
+      line.indexOf(expectedOpcode),
+      line.indexOf(expectedOpcode) + expectedOpcode.length,
+      TokenKind.OpCode);
+    const expectedOperandToken = new Token(
+      expectedOperand,
+      line.indexOf(expectedOperand),
+      line.indexOf(expectedOperand) + expectedOperand.length,
+      TokenKind.Number);
+    const expectedCommentToken = new Token(
+      expectedComment,
+      line.indexOf(commentString),
+      line.indexOf(commentString) + commentString.length,
+      TokenKind.Comment);
+    const lineScanner = new LineScanner();
+
+    const tokens = lineScanner.parse(line);
+
+    expect(tokens.length).toBe(4);
+    expect(tokens[0]).toEqual(expectedSymbolToken);
+    expect(tokens[1]).toEqual(expectedOpcodeToken);
+    expect(tokens[2]).toEqual(expectedOperandToken);
+    expect(tokens[3]).toEqual(expectedCommentToken);
+  });
+  
 });
