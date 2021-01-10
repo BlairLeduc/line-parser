@@ -29,58 +29,94 @@ export class LineScanner {
 
   }
 
-  public parse(text: string): Token[] {
-    const tokens: Token[] = [];
-    let pos = 0;
+  public parse(line: string): Token[] {
 
-    if (text.trim() === '') {
+    // Empty line
+    if (line.trim() === '') {
       return [];
     }
 
-    // Line numbers
+    const tokens: Token[] = [];
+    let pos = 0;
+    let text = line;
+
+    // Line number
     const lineNumberMatch = /^[0-9]+([ ]|$)/.exec(text);
     if (lineNumberMatch) {
       pos += lineNumberMatch[0].length;
-    }
-    
-    text = text.substr(pos);
-    if (!text) {
-      return tokens; // end of the line, return
+      text = line.substr(pos);
+      if (!text) {
+        return tokens; // end of the line, return
+      }
     }
 
-    // Lines with comments
+    // Line with only comment
     let commentMatch = /^(?:(\s*)[*;#])\s*(.*)/.exec(text);
     if (commentMatch) {
       const space = commentMatch[1].length;
-      tokens.push(new Token(commentMatch[2].trim(), pos + space, pos + space + commentMatch[0].trim().length, TokenKind.Comment));
+      tokens.push(new Token(commentMatch[2].trimEnd(), pos + space, pos + space + commentMatch[0].trim().length, TokenKind.Comment));
       return tokens;
     }
 
     // Line starting with a symbol
-    const symbolMatch = /^([^\s:]+)/i.exec(text); // consume everything until a space or colon
+    const symbolMatch = /^([^\s:]+)/i.exec(text); // match everything until a space or colon
     if (symbolMatch) {
-      const name = symbolMatch[0];
+      const name = symbolMatch[1];
       const isValid = /^([a-z_@$][a-z0-9.$_@?]+)$/i.test(name);
       const isLocal = /.*[$@?].*/.test(name);
       tokens.push(new Token(name, pos, pos + name.length, isLocal ? TokenKind.LocalSymbol : TokenKind.GlobalSymbol, isValid));
-      pos += name.length;
-      if (text[pos] === ':') {
-        tokens.push(new Token(':', pos, pos + 1, TokenKind.Operator));
+      
+      pos += symbolMatch[0].length;
+      text = line.substr(pos);
+      if (!text) {
+        return tokens; // end of the line, return
       }
-      pos += 1; // skip over the space or colon
     }
 
-    text = text.substr(pos);
-    if (!text) {
-      return tokens; // end of the line, return
+    // Symbol can be followed bt a colon (acts like a space)
+    const colonFound = text.startsWith(':');
+    if (colonFound) {
+      if (!symbolMatch) {
+        // A colon preceeded by nothing is an empty symbol (invalid)
+        tokens.push(new Token('', pos, pos, TokenKind.GlobalSymbol, false));
+      }
+      tokens.push(new Token(':', pos, pos + 1, TokenKind.Operator));
+      
+      text = ' ' + line.substr(pos + 1); // replace the colon with a space for next match
+      if (!text) {
+        return tokens; // end of the line, return
+      }
     }
 
-    commentMatch = /^(?:(\s*)[*;])(.*)/.exec(text);
+    // Symbol followed by a comment
+    commentMatch = /^(?:(\s+)[*;])(.*)/.exec(text); // 
     if (commentMatch) {
       const space = commentMatch[1].length;
-      tokens.push(new Token(commentMatch[2].trim(), space + pos, space + pos + commentMatch[0].length, TokenKind.Comment));
+      tokens.push(new Token(commentMatch[2].trim(), space + pos, space + pos + commentMatch[0].trim().length, TokenKind.Comment));
       return tokens;
     }
+
+    // Opcode, Pseudo-op, macro or struct
+    const opcodeMatch = /^(\s)([^\s]+)/i.exec(text); // match everything until a space
+    if (opcodeMatch) {
+      const space = opcodeMatch[1].length;
+      const name = opcodeMatch[2];
+      tokens.push(new Token(name, pos + space, pos + space + name.length, TokenKind.OpCode));
+      
+      pos += opcodeMatch[0].length;
+      text = line.substr(pos);
+      if (!text) {
+        return tokens; // end of the line, return
+      }
+    }
+
+    // End of line comment
+    commentMatch = /^(?:(\s+)[*;]?)(.*)/.exec(text); // 
+    if (commentMatch && commentMatch[2]) {
+      const space = commentMatch[1].length;
+      tokens.push(new Token(commentMatch[2].trim(), space + pos, space + pos + commentMatch[0].trim().length, TokenKind.Comment));
+      return tokens;
+    }    
 
     return tokens;
   }

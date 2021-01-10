@@ -6,7 +6,7 @@ export enum TokenKind {
     GlobalReference,
     LocalSymbol,
     LocalReference,
-    Keyword,
+    OpCode,
     String,
     Number,
     Operator,
