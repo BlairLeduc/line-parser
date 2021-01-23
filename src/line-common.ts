@@ -17,6 +17,8 @@ export const inherentOpcodes = new Set([
   'swi', 'swi2', 'swi3',
   'sync',
   'tsta', 'tstb', 'tstd', 'tste', 'tstf', 'tstw',
+  'reorg', 'else', 'endc', 'emod', 'endm', 'endstruct', 'ends', 'endsection', 'endsect',
+  'extern', 'external', 'import', 'export', '.globl', 'extdep', 
 ]);
 
 export const operandOpcodes = new Set([
@@ -47,7 +49,16 @@ export const operandOpcodes = new Set([
   'sta', 'stb', 'std', 'ste', 'stf', 'stq', 'sts', 'stu', 'stw', 'stx', 'sty',
   'stbt',
   'suba', 'subb', 'subd', 'sube', 'subf', 'subr', 'subw',
-  'tfm', 'tim', 'tst'
+  'tfm', 'tim', 'tst',
+  '.4byte', '.area', '.ascii', '.ascis', '.asciz', '.blkb', '.byte', 
+  '.db', '.ds', '.dw', '.quad', '.rs', '.str', '.strs', '.strz', '.word', 
+  '*pragma', '*pragmapop', '*pragmapush', 
+  'align', 'end', 'equ', 'error', 
+  'fcb', 'fcc', 'fcn', 'fcs', 'fdb', 'fill', 
+  'fqb', 'ifdef', 'ifeq', 'ifge', 'ifgt', 'ifle', 'iflt', 'ifndef', 'ifne', 'ifpragma', 
+  'import', 'include', 'includebin', 'macro', 'mod', 'nam', 'org', 'os9', 'pragma', 
+  'rmb', 'rmd', 'rmq', 'sect', 'section', 'set', 'setdp', 'struct', 'use', 'warning', 
+  'zmb', 'zmd', 'zmq', 
 ]);
 
 export const inherentPseudoOps = new Set([
@@ -72,27 +83,24 @@ export enum TokenKind {
     Constant,
     Variable,
     Type,
-    GlobalSymbol,
-    GlobalReference,
-    LocalSymbol,
-    LocalReference,
+    Symbol,
+    Reference,
     OpCode,
     String,
     Number,
     Operator,
     Comment,
     FileName,
-    Property,
-    PropertyReference,
   }
-  
+
   export class Token {
     constructor(
       public text: string,
-      public start: number,
-      public end: number,
+      public char: number,
+      public length: number,
       public kind: TokenKind,
       public isValid: boolean = true,
+      public isLocal: boolean = false,
     ) {}
   }
   

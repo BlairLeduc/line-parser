@@ -27,7 +27,7 @@ export class LineScanner {
     let commentMatch = /^(?:(\s*)[*;#])\s*(.*)/.exec(text);
     if (commentMatch) {
       const space = commentMatch[1].length;
-      tokens.push(new Token(commentMatch[2].trimEnd(), pos + space, pos + space + commentMatch[0].trim().length, TokenKind.Comment));
+      tokens.push(new Token(commentMatch[2].trimEnd(), pos + space, commentMatch[0].trim().length, TokenKind.Comment));
       return tokens;
     }
 
@@ -37,7 +37,7 @@ export class LineScanner {
       const name = symbolMatch[1];
       const isValid = /^([a-z_@$][a-z0-9.$_@?]+)$/i.test(name);
       const isLocal = /.*[$@?].*/.test(name);
-      tokens.push(new Token(name, pos, pos + name.length, isLocal ? TokenKind.LocalSymbol : TokenKind.GlobalSymbol, isValid));
+      tokens.push(new Token(name, pos, name.length, TokenKind.Symbol, isValid, isLocal));
 
       pos += symbolMatch[0].length;
       text = line.substr(pos);
@@ -51,9 +51,9 @@ export class LineScanner {
     if (colonFound) {
       if (!symbolMatch) {
         // A colon preceeded by nothing is an empty symbol (invalid)
-        tokens.push(new Token('', pos, pos, TokenKind.GlobalSymbol, false));
+        tokens.push(new Token('', pos, 0, TokenKind.Symbol, false));
       }
-      tokens.push(new Token(':', pos, pos + 1, TokenKind.Operator));
+      tokens.push(new Token(':', pos, 1, TokenKind.Operator));
 
       text = ' ' + line.substr(pos + 1); // replace the colon with a space for next match
       if (text === ' ') {
@@ -65,7 +65,7 @@ export class LineScanner {
     commentMatch = /^(?:(\s+)[*;])(.*)/.exec(text); // 
     if (commentMatch) {
       const space = commentMatch[1].length;
-      tokens.push(new Token(commentMatch[2].trim(), space + pos, space + pos + commentMatch[0].trim().length, TokenKind.Comment));
+      tokens.push(new Token(commentMatch[2].trim(), space + pos, commentMatch[0].trim().length, TokenKind.Comment));
       return tokens;
     }
 
@@ -75,7 +75,7 @@ export class LineScanner {
     if (opcodeMatch) {
       const space = opcodeMatch[1].length;
       opcode = opcodeMatch[2];
-      tokens.push(new Token(opcode, pos + space, pos + space + opcode.length, TokenKind.OpCode));
+      tokens.push(new Token(opcode, pos + space, opcode.length, TokenKind.OpCode));
 
       pos += opcodeMatch[0].length;
       text = line.substr(pos);
@@ -89,8 +89,16 @@ export class LineScanner {
       const operandMatch = /^(\s)([^\s]+)/i.exec(text); // match everything until a space
       if (operandMatch) {
         const space = operandMatch[1].length;
-        const operand = operandMatch[2];
-        tokens.push(new Token(operand, pos + space, pos + space + operand.length, TokenKind.Number));
+        let expression = operandMatch[2];
+        let offset = 0;
+        while (expression.length > 0) {
+          const match = this.findMatch(expression);
+          const length = match[0][0].length;
+
+          tokens.push(new Token(match[0][0], pos + space + offset, length, match[1]));
+          expression = expression.substring(length);
+          offset += length;
+        }
 
         pos += operandMatch[0].length;
         text = line.substr(pos);
@@ -104,10 +112,43 @@ export class LineScanner {
     commentMatch = /^(?:(\s+)[*;]?)(.*)/.exec(text); // 
     if (commentMatch && commentMatch[2]) {
       const space = commentMatch[1].length;
-      tokens.push(new Token(commentMatch[2].trim(), space + pos, space + pos + commentMatch[0].trim().length, TokenKind.Comment));
+      tokens.push(new Token(commentMatch[2].trim(), space + pos, commentMatch[0].trim().length, TokenKind.Comment));
       return tokens;
     }
 
     return tokens;
   }
+
+
+  private findMatch(s: string): [RegExpMatchArray, TokenKind] {
+    let tokenKind = TokenKind.Number;
+    let match = /^(('.)|("..))/.exec(s); // character constant
+    if (!match) {
+      match = /^((\$|(0x))[0-9a-f]*)|([0-9][0-9a-f]*h)/i.exec(s); // hex number
+    }
+    if (!match) {
+      match = /^((@[0-7]+)|([0-7]+[qo]))/i.exec(s); // octal number
+    }
+    if (!match) {
+      match = /^((%[01]+)|([01]+b))/i.exec(s); // binary number
+    }
+    if (!match) {
+      match = /^((&[0-9]+)|([0-9]+))/i.exec(s); // decimal number
+    }
+    if (!match) {
+      match = /^([a-z_@$][a-z0-9.$_@?]*)/i.exec(s); // reference
+      if (match) {
+        tokenKind = TokenKind.Reference;
+      }
+    }
+    if (!match) {
+      tokenKind = TokenKind.Operator;
+      match = /^((&&)|(\|\|)|(\+\+)|(--))/.exec(s); // two character operator
+      if (!match) {
+        match = /./.exec(s); // if all else fails, match the next character as an operator.
+      }
+    }
+    
+    return [match!, tokenKind];
+  };
 }
