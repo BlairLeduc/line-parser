@@ -1,4 +1,4 @@
-import { inherentOpcodes, operandOpcodes, Token, TokenKind } from '../src/line-common';
+import { Token, TokenKind } from '../src/line-common';
 import { LineScanner } from '../src/line-parser';
 
 describe('LineScanner', () => {
@@ -454,6 +454,22 @@ describe('LineScanner', () => {
       expect(tokens[0]).toEqual(expectedOpcodeToken);
     });
 
+    it(`Inherent opcode ${opcode.toUpperCase()} returns opcode token`, () => {
+      const expectedOpcode = opcode.toUpperCase();
+      const line = ` ${expectedOpcode}`;
+      const expectedOpcodeToken = new Token(
+        expectedOpcode,
+        line.indexOf(expectedOpcode),
+        expectedOpcode.length,
+        TokenKind.OpCode);
+      const lineScanner = new LineScanner();
+
+      const tokens = lineScanner.parse(line);
+
+      expect(tokens.length).toBe(1);
+      expect(tokens[0]).toEqual(expectedOpcodeToken);
+    });
+
     it(`Inherent opcode ${opcode}, comment returns opcode, comment tokens`, () => {
       const expectedOpcode = opcode;
       const expectedComment = 'Hello there';
@@ -597,6 +613,29 @@ describe('LineScanner', () => {
       expect(tokens[1]).toEqual(expectedOperandToken);
     });
 
+    it(`Operand opcode ${opcode.toUpperCase()}, operand returns opcode, operand tokens`, () => {
+      const expectedOpcode = opcode.toUpperCase();
+      const expectedOperand = '42';
+      const line = ` ${expectedOpcode} ${expectedOperand}`;
+      const expectedOpcodeToken = new Token(
+        expectedOpcode,
+        line.indexOf(expectedOpcode),
+        expectedOpcode.length,
+        TokenKind.OpCode);
+      const expectedOperandToken = new Token(
+        expectedOperand,
+        line.indexOf(expectedOperand),
+        expectedOperand.length,
+        TokenKind.Number);
+      const lineScanner = new LineScanner();
+
+      const tokens = lineScanner.parse(line);
+
+      expect(tokens.length).toBe(2);
+      expect(tokens[0]).toEqual(expectedOpcodeToken);
+      expect(tokens[1]).toEqual(expectedOperandToken);
+    });
+
     it(`Operand opcode ${opcode}, comment returns opcode, operand, comment tokens`, () => {
       const expectedOpcode = opcode;
       const expectedOperand = '42';
@@ -669,7 +708,7 @@ describe('LineScanner', () => {
     it(`Binary % operand returns opcode, operand tokens`, () => {
       const expectedOpcode = opcode;
       const expectedOperand = '%11001010';
-      const line = ` ${expectedOpcode} ${expectedOperand}`;
+      const line = `  ${expectedOpcode} ${expectedOperand}`;
       const expectedOpcodeToken = new Token(
         expectedOpcode,
         line.indexOf(expectedOpcode),
@@ -1134,4 +1173,76 @@ describe('LineScanner', () => {
       expect(tokens[1]).toEqual(expectedOperandToken);
     });
   });
+
+  ['fcc', 'fcn', 'fcs'].forEach(pseudo => {
+    it(`${pseudo} string, operand returns opcode, string tokens`, () => {
+      const expectedOpcode = pseudo;
+      const expectedOperand = '/this is a string/';
+      const line = ` ${expectedOpcode} ${expectedOperand}`;
+      const expectedOpcodeToken = new Token(
+        expectedOpcode,
+        line.indexOf(expectedOpcode),
+        expectedOpcode.length,
+        TokenKind.OpCode);
+      const expectedOperandToken = new Token(
+        expectedOperand,
+        line.indexOf(expectedOperand),
+        expectedOperand.length,
+        TokenKind.String);
+      const lineScanner = new LineScanner();
+
+      const tokens = lineScanner.parse(line);
+
+      expect(tokens.length).toBe(2);
+      expect(tokens[0]).toEqual(expectedOpcodeToken);
+      expect(tokens[1]).toEqual(expectedOperandToken);
+    });
+  });
+
+  it(`include string, operand returns opcode, string tokens`, () => {
+    const expectedOpcode = 'include';
+    const expectedOperand = '/usr/local/var/file.asm';
+    const line = ` ${expectedOpcode} ${expectedOperand}`;
+    const expectedOpcodeToken = new Token(
+      expectedOpcode,
+      line.indexOf(expectedOpcode),
+      expectedOpcode.length,
+      TokenKind.OpCode);
+    const expectedOperandToken = new Token(
+      expectedOperand,
+      line.indexOf(expectedOperand),
+      expectedOperand.length,
+      TokenKind.FileName);
+    const lineScanner = new LineScanner();
+
+    const tokens = lineScanner.parse(line);
+
+    expect(tokens.length).toBe(2);
+    expect(tokens[0]).toEqual(expectedOpcodeToken);
+    expect(tokens[1]).toEqual(expectedOperandToken);
+  });
+
+  it(`warning string, operand returns opcode, string tokens`, () => {
+    const expectedOpcode = 'warning';
+    const expectedOperand = 'Watch your head!';
+    const line = ` ${expectedOpcode} ${expectedOperand}`;
+    const expectedOpcodeToken = new Token(
+      expectedOpcode,
+      line.indexOf(expectedOpcode),
+      expectedOpcode.length,
+      TokenKind.OpCode);
+    const expectedOperandToken = new Token(
+      expectedOperand,
+      line.indexOf(expectedOperand),
+      expectedOperand.length,
+      TokenKind.String);
+    const lineScanner = new LineScanner();
+
+    const tokens = lineScanner.parse(line);
+
+    expect(tokens.length).toBe(2);
+    expect(tokens[0]).toEqual(expectedOpcodeToken);
+    expect(tokens[1]).toEqual(expectedOperandToken);
+  });
+
 });

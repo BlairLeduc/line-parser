@@ -61,6 +61,20 @@ export const operandOpcodes = new Set([
   'zmb', 'zmd', 'zmq', 
 ]);
 
+export const delimitedStringPseudoOps = new Set([
+  'fcc', 'fcn', 'fcs',
+  '.ascii', '.asciz', '.ascis',
+  '.str', '.strz', '.strs', 
+]);
+
+export const stringPseudoOps = new Set([
+  'error', 'warning', '.module',
+]);
+
+export const filePseudoOps = new Set([
+  'includebin', 'include', 'use',
+]);
+
 export const inherentPseudoOps = new Set([
   'reorg', 'else', 'endc', 'emod', 'endm', 'endstruct', 'ends', 'endsection', 'endsect',
   'extern', 'external', 'import', 'export', '.globl', 'extdep', 

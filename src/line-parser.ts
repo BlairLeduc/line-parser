@@ -1,4 +1,4 @@
-import { operandOpcodes, Token, TokenKind } from './line-common';
+import { delimitedStringPseudoOps, filePseudoOps, operandOpcodes, stringPseudoOps, Token, TokenKind } from './line-common';
 
 export class LineScanner {
 
@@ -32,7 +32,7 @@ export class LineScanner {
     }
 
     // Line starting with a symbol
-    const symbolMatch = /^([^\s:]+)/i.exec(text); // match everything until a space or colon
+    const symbolMatch = /^([^\s:]+)/.exec(text); // match everything until a space or colon
     if (symbolMatch) {
       const name = symbolMatch[1];
       const isValid = /^([a-z_@$][a-z0-9.$_@?]+)$/i.test(name);
@@ -71,7 +71,7 @@ export class LineScanner {
 
     // Opcode, Pseudo-op, macro or struct
     let opcode: string = '';
-    const opcodeMatch = /^(\s)([^\s]+)/i.exec(text); // match everything until a space
+    const opcodeMatch = /^(\s+)([^\s]+)/.exec(text); // match everything until a space
     if (opcodeMatch) {
       const space = opcodeMatch[1].length;
       opcode = opcodeMatch[2];
@@ -84,9 +84,57 @@ export class LineScanner {
       }
     }
 
+    // if delimited string operand, match and cosume
+    if (opcode && delimitedStringPseudoOps.has(opcode.toLowerCase())) {
+      const operandMatch = /^(\s+)((.).*\2)/.exec(text); // match everything until a space
+      if (operandMatch) {
+        const space = operandMatch[1].length;
+        const str = operandMatch[2];
+        tokens.push(new Token(str, pos + space, str.length, TokenKind.String));
+  
+        pos += operandMatch[0].length;
+        text = line.substr(pos);
+        if (!text) {
+          return tokens; // end of the line, return
+        }
+      }
+    }
+
+    // if file operand, match and cosume
+    if (opcode && filePseudoOps.has(opcode.toLowerCase())) {
+      const operandMatch = /^(\s+)(.*)/.exec(text); // match everything until a space
+      if (operandMatch) {
+        const space = operandMatch[1].length;
+        const str = operandMatch[2];
+        tokens.push(new Token(str, pos + space, str.length, TokenKind.FileName));
+  
+        pos += operandMatch[0].length;
+        text = line.substr(pos);
+        if (!text) {
+          return tokens; // end of the line, return
+        }
+      }
+    }
+
+    // if string operand, match and cosume
+    if (opcode && stringPseudoOps.has(opcode.toLowerCase())) {
+      const operandMatch = /^(\s+)(.*)/.exec(text); // match everything until a space
+      if (operandMatch) {
+        const space = operandMatch[1].length;
+        const str = operandMatch[2];
+        tokens.push(new Token(str, pos + space, str.length, TokenKind.String));
+  
+        pos += operandMatch[0].length;
+        text = line.substr(pos);
+        if (!text) {
+          return tokens; // end of the line, return
+        }
+      }
+    }
+
     // if opcode needs operand, match and consume
-    if (opcode && operandOpcodes.has(opcode)) {
-      const operandMatch = /^(\s)([^\s]+)/i.exec(text); // match everything until a space
+    if (opcode && operandOpcodes.has(opcode.toLowerCase())) {
+      const operandMatch = /^(\s+)([^\s]+)/.exec(text); // match everything until a space
       if (operandMatch) {
         const space = operandMatch[1].length;
         let expression = operandMatch[2];
