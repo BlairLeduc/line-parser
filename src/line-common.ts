@@ -117,4 +117,6 @@ export enum TokenKind {
       public isLocal: boolean = false,
     ) {}
   }
+
+  export type TokenSequence = Token[];
   

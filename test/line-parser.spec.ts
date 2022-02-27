@@ -1,5 +1,5 @@
 import { Token, TokenKind } from '../src/line-common';
-import { LineScanner } from '../src/line-parser';
+import { LineScanner } from '../src/line-scanner';
 
 describe('LineScanner', () => {
   it('Can create', () => {

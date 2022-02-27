@@ -1,202 +1,214 @@
-import { delimitedStringPseudoOps, filePseudoOps, operandOpcodes, stringPseudoOps, Token, TokenKind } from './line-common';
+import { delimitedStringPseudoOps, inherentOpcodes, inherentPseudoOps, stringPseudoOps } from './line-common';
 
-export class LineScanner {
+export class Capture {
+  public text: string = '';
+  public position: number = 0;
+}
 
-  public parse(line: string): Token[] {
+export class Line {
+  public isValid: boolean = true;
+  public lineNumber: number | null = null;
+  public symbol: Capture | null = null;
+  public opcode: Capture | null = null;
+  public operand: Capture | null = null;
+  public comment: Capture | null = null;
+}
 
-    // Empty line
-    if (line.trim() === '') {
-      return [];
-    }
+export class LineParser {
 
-    const tokens: Token[] = [];
+  public getLine(text: string): Line {
+    const line = new Line();
     let pos = 0;
-    let text = line;
+    const length = text.length;
+    let ch = text[0];
 
-    // Line number
-    const lineNumberMatch = /^[0-9]+([ ]|$)/.exec(text);
-    if (lineNumberMatch) {
-      pos += lineNumberMatch[0].length;
-      text = line.substr(pos);
-      if (!text) {
-        return tokens; // end of the line, return
+    if (text.trim() === '') {
+      return line;
+    }
+
+    // Line number at the start of a line?
+    if (this.isDigit(ch)) {
+      let lineNumber = '';
+
+      // Consume all digits
+      while (pos < length && this.isDigit(ch)) {
+        lineNumber += ch;
+        ch = text[++pos];
+      }
+
+      // A line number must be followed by the end of line or a single whitespace character
+      // Fail if not
+      if (pos < length && !this.isWhitespace(text[pos])) {
+        line.isValid = false;
+        return line;
+      }
+
+      line.lineNumber = Number(lineNumber);
+
+      if (pos < length) {
+        ch = text[++pos]; // Consume the whitespace character after the line number
       }
     }
 
-    // Line with only comment
-    let commentMatch = /^(?:(\s*)[*;#])\s*(.*)/.exec(text);
-    if (commentMatch) {
-      const space = commentMatch[1].length;
-      tokens.push(new Token(commentMatch[2].trimEnd(), pos + space, commentMatch[0].trim().length, TokenKind.Comment));
-      return tokens;
+    // Comment? Consume and end
+    if (pos < length && (this.isCommentStarter(ch))) {
+      line.comment = { text: text.substring(pos), position: pos };
+      return line;
     }
 
-    // Line starting with a symbol
-    const symbolMatch = /^([^\s:]+)/.exec(text); // match everything until a space or colon
-    if (symbolMatch) {
-      const name = symbolMatch[1];
-      const isValid = /^([a-z_@$][a-z0-9.$_@?]+)$/i.test(name);
-      const isLocal = /.*[$@?].*/.test(name);
-      tokens.push(new Token(name, pos, name.length, TokenKind.Symbol, isValid, isLocal));
+    // Symbol at the start of line (after the optional line number)?
+    if (pos < length && (this.isLetter(ch) || ch[0] === '.' || ch[0] === '_')) {
+      let symbol: Capture = { text: '', position: pos };
 
-      pos += symbolMatch[0].length;
-      text = line.substr(pos);
-      if (!text) {
-        return tokens; // end of the line, return
+      // Consume the symbol
+      while (pos < length
+        && (this.isLetter(ch) || this.isDigit(ch)
+          || ch[0] === '.' || ch[0] === '_' || ch[0] === '$'
+          || ch[0] === '@' || ch[0] === '?')) {
+        symbol.text += ch;
+        ch = text[++pos];
       }
+
+      line.symbol = symbol;
     }
 
-    // Symbol can be followed bt a colon (acts like a space)
-    const colonFound = text.startsWith(':');
-    if (colonFound) {
-      if (!symbolMatch) {
-        // A colon preceeded by nothing is an empty symbol (invalid)
-        tokens.push(new Token('', pos, 0, TokenKind.Symbol, false));
+    // Now look for opcode
+
+    // Opcodes need at least one whitespace character or this is an error
+    if (pos < length && !this.isWhitespace(ch)) {
+      line.isValid = false;
+      return line;
+    }
+
+    // Consume whitespace
+    //pos = this.consumeWhitespace(text, pos, length);
+    while (pos < length && this.isWhitespace(ch)) {
+      ch = text[++pos];
+    }
+
+    // is this an opcode here?
+    if (pos < length && (this.isLetter(ch) || ch[0] === '.')) {
+      let opcode: Capture = { text: '', position: pos };
+
+      // Consume all opcode
+      while (pos < length && !this.isWhitespace(ch)) {
+        opcode.text += ch;
+        ch = text[++pos];
       }
-      tokens.push(new Token(':', pos, 1, TokenKind.Operator));
-
-      text = ' ' + line.substr(pos + 1); // replace the colon with a space for next match
-      if (text === ' ') {
-        return tokens; // end of the line, return
-      }
+      line.opcode = opcode;
     }
 
-    // Symbol followed by a comment
-    commentMatch = /^(?:(\s+)[*;])(.*)/.exec(text); // 
-    if (commentMatch) {
-      const space = commentMatch[1].length;
-      tokens.push(new Token(commentMatch[2].trim(), space + pos, commentMatch[0].trim().length, TokenKind.Comment));
-      return tokens;
+    // End of line?
+    if (pos >= length) {
+      return line;
     }
 
-    // Opcode, Pseudo-op, macro or struct
-    let opcode: string = '';
-    const opcodeMatch = /^(\s+)([^\s]+)/.exec(text); // match everything until a space
-    if (opcodeMatch) {
-      const space = opcodeMatch[1].length;
-      opcode = opcodeMatch[2];
-      tokens.push(new Token(opcode, pos + space, opcode.length, TokenKind.OpCode));
-
-      pos += opcodeMatch[0].length;
-      text = line.substr(pos);
-      if (!text) {
-        return tokens; // end of the line, return
-      }
+    // Consume whitespace
+    while (pos < length && this.isWhitespace(ch)) {
+      ch = text[++pos];
     }
 
-    // if delimited string operand, match and cosume
-    if (opcode && delimitedStringPseudoOps.has(opcode.toLowerCase())) {
-      const operandMatch = /^(\s+)((.).*\2)/.exec(text); // match everything until a space
-      if (operandMatch) {
-        const space = operandMatch[1].length;
-        const str = operandMatch[2];
-        tokens.push(new Token(str, pos + space, str.length, TokenKind.String));
-  
-        pos += operandMatch[0].length;
-        text = line.substr(pos);
-        if (!text) {
-          return tokens; // end of the line, return
-        }
-      }
+    // End of line?
+    if (pos >= length) {
+      return line;
     }
 
-    // if file operand, match and cosume
-    if (opcode && filePseudoOps.has(opcode.toLowerCase())) {
-      const operandMatch = /^(\s+)(.*)/.exec(text); // match everything until a space
-      if (operandMatch) {
-        const space = operandMatch[1].length;
-        const str = operandMatch[2];
-        tokens.push(new Token(str, pos + space, str.length, TokenKind.FileName));
-  
-        pos += operandMatch[0].length;
-        text = line.substr(pos);
-        if (!text) {
-          return tokens; // end of the line, return
-        }
-      }
+    // Comment? Consume and end
+    if (pos < length && this.isCommentStarter(ch)) {
+      line.comment = { text: text.substring(pos), position: pos };
+      return line;
     }
 
-    // if string operand, match and cosume
-    if (opcode && stringPseudoOps.has(opcode.toLowerCase())) {
-      const operandMatch = /^(\s+)(.*)/.exec(text); // match everything until a space
-      if (operandMatch) {
-        const space = operandMatch[1].length;
-        const str = operandMatch[2];
-        tokens.push(new Token(str, pos + space, str.length, TokenKind.String));
-  
-        pos += operandMatch[0].length;
-        text = line.substr(pos);
-        if (!text) {
-          return tokens; // end of the line, return
-        }
-      }
-    }
+    if (line.opcode) {
+      // Should we expect an operand?
+      const lowerOpcode = line.opcode.text.toLowerCase();
 
-    // if opcode needs operand, match and consume
-    if (opcode && operandOpcodes.has(opcode.toLowerCase())) {
-      const operandMatch = /^(\s+)([^\s]+)/.exec(text); // match everything until a space
-      if (operandMatch) {
-        const space = operandMatch[1].length;
-        let expression = operandMatch[2];
-        let offset = 0;
-        while (expression.length > 0) {
-          const match = this.findMatch(expression);
-          const length = match[0][0].length;
+      if (!(inherentOpcodes.has(lowerOpcode) || inherentPseudoOps.has(lowerOpcode))) {
+        let operand: Capture = { text: '', position: pos };
 
-          tokens.push(new Token(match[0][0], pos + space + offset, length, match[1]));
-          expression = expression.substring(length);
-          offset += length;
+        if (delimitedStringPseudoOps.has(lowerOpcode)) {
+          // Comsume the delimited string
+          operand.text += ch;
+
+          const endCh = ch;
+          ch = text[++pos];
+
+          while (pos < length && ch[0] != endCh) {
+            operand.text += ch;
+            ch = text[++pos];
+          }
+
+          operand.text += ch;
+          pos++;
+        } else if (stringPseudoOps.has(lowerOpcode)) {
+          // Consume the rest of the line for these pseudo ops
+          operand.text = text.substring(pos);
+          pos = length;
+        } else {
+          // Consume the operand
+          while (pos < length && !this.isWhitespace(ch)) {
+            operand.text += ch;
+            ch = text[++pos];
+          }
         }
 
-        pos += operandMatch[0].length;
-        text = line.substr(pos);
-        if (!text) {
-          return tokens; // end of the line, return
-        }
+        line.operand = operand;
       }
     }
 
-    // End of line comment
-    commentMatch = /^(?:(\s+)[*;]?)(.*)/.exec(text); // 
-    if (commentMatch && commentMatch[2]) {
-      const space = commentMatch[1].length;
-      tokens.push(new Token(commentMatch[2].trim(), space + pos, commentMatch[0].trim().length, TokenKind.Comment));
-      return tokens;
+    // End of line?
+    if (pos >= length) {
+      return line;
     }
 
-    return tokens;
+    // Consume whitespace
+    while (pos < length && this.isWhitespace(ch)) {
+      ch = text[++pos];
+    }
+
+    // End of line?
+    if (pos >= length) {
+      return line;
+    }
+
+    // Consume the comment, if any
+    if (pos < length) {
+      let comment: Capture = { text: '', position: pos };
+
+      while (pos < length) {
+        comment.text += ch;
+        ch = text[++pos];
+      }
+
+      line.comment = comment;
+    }
+
+    return line;
   }
 
+  public isLetter(ch: string): boolean {
+    return ((ch[0] >= 'a' && ch[0] <= 'z') || (ch[0] >= 'A' && ch[0] <= 'Z'));
+  }
 
-  private findMatch(s: string): [RegExpMatchArray, TokenKind] {
-    let tokenKind = TokenKind.Number;
-    let match = /^(('.)|("..))/.exec(s); // character constant
-    if (!match) {
-      match = /^((\$|(0x))[0-9a-f]*)|([0-9][0-9a-f]*h)/i.exec(s); // hex number
+  public isDigit(ch: string): boolean {
+    return ch[0] >= '0' && ch[0] <= '9';
+  }
+
+  public isWhitespace(ch: string): boolean {
+    return ch[0] === ' ' || ch[0] === '\t';
+  }
+
+  public isCommentStarter(ch: string): boolean {
+    return ch[0] === '*' || ch[0] === ';';
+  }
+
+  public consumeWhitespace(text: string, pos: number, length: number): number {
+    let ch = text[pos];
+
+    while (pos < length && this.isWhitespace(ch)) {
+      ch = text[++pos];
     }
-    if (!match) {
-      match = /^((@[0-7]+)|([0-7]+[qo]))/i.exec(s); // octal number
-    }
-    if (!match) {
-      match = /^((%[01]+)|([01]+b))/i.exec(s); // binary number
-    }
-    if (!match) {
-      match = /^((&[0-9]+)|([0-9]+))/i.exec(s); // decimal number
-    }
-    if (!match) {
-      match = /^([a-z_@$][a-z0-9.$_@?]*)/i.exec(s); // reference
-      if (match) {
-        tokenKind = TokenKind.Reference;
-      }
-    }
-    if (!match) {
-      tokenKind = TokenKind.Operator;
-      match = /^((&&)|(\|\|)|(\+\+)|(--))/.exec(s); // two character operator
-      if (!match) {
-        match = /./.exec(s); // if all else fails, match the next character as an operator.
-      }
-    }
-    
-    return [match!, tokenKind];
-  };
+
+    return pos;
+  }
 }
