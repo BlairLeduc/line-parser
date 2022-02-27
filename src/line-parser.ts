@@ -201,14 +201,4 @@ export class LineParser {
   public isCommentStarter(ch: string): boolean {
     return ch[0] === '*' || ch[0] === ';';
   }
-
-  public consumeWhitespace(text: string, pos: number, length: number): number {
-    let ch = text[pos];
-
-    while (pos < length && this.isWhitespace(ch)) {
-      ch = text[++pos];
-    }
-
-    return pos;
-  }
 }
