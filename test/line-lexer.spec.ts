@@ -1,5 +1,5 @@
-import { Token, TokenKind } from '../src/line-common';
-import { Capture, Line, LineParser } from '../src/line-parser';
+import { Capture, Line, TokenKind, TokenSequence } from '../src/line-common';
+import { LineParser } from '../src/line-parser';
 
 describe('LineScanner', () => {
   it('Can create', () => {
@@ -93,9 +93,9 @@ describe('LineScanner', () => {
   it('getLine: empty', () => {
     const text = '';
     const expected: Line = { isValid: true, lineNumber: null, symbol: null, opcode: null, operand: null, comment: null };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -104,9 +104,9 @@ describe('LineScanner', () => {
   it('getLine: contains line number only is valid', ()=> {
     const text = '1234';
     const expected: Line = { isValid: true, lineNumber: 1234, symbol: null, opcode: null, operand: null, comment: null };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -114,9 +114,9 @@ describe('LineScanner', () => {
   it('getLine: line number followed by whitespace is valid', ()=> {
     const text = '1234 ';
     const expected: Line = { isValid: true, lineNumber: 1234, symbol: null, opcode: null, operand: null, comment: null };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -125,9 +125,9 @@ describe('LineScanner', () => {
   it('getLine: line number followed by non-whitespace is not valid', ()=> {
     const text = '1234alpha';
     const expected: Line = { isValid: false, lineNumber: null, symbol: null, opcode: null, operand: null, comment: null };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -137,9 +137,9 @@ describe('LineScanner', () => {
     const symbol: Capture = { text: 'alpha', position: 0 };
     const text = symbol.text;
     const expected: Line = { isValid: true, lineNumber: null, symbol: symbol, opcode: null, operand: null, comment: null };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -149,9 +149,9 @@ describe('LineScanner', () => {
     const symbol: Capture = { text: '.alpha', position: 0 };
     const text = symbol.text;
     const expected: Line = { isValid: true, lineNumber: null, symbol: symbol, opcode: null, operand: null, comment: null };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -161,9 +161,9 @@ describe('LineScanner', () => {
     const symbol: Capture = { text: '_alpha', position: 0 };
     const text = symbol.text;
     const expected: Line = { isValid: true, lineNumber: null, symbol: symbol, opcode: null, operand: null, comment: null };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -173,9 +173,9 @@ describe('LineScanner', () => {
     const symbol: Capture = { text: 'alpha7bravo2', position: 0 };
     const text = symbol.text;
     const expected: Line = { isValid: true, lineNumber: null, symbol: symbol, opcode: null, operand: null, comment: null };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -185,9 +185,9 @@ describe('LineScanner', () => {
     const symbol: Capture = { text: 'alpha$bravo', position: 0 };
     const text = symbol.text;
     const expected: Line = { isValid: true, lineNumber: null, symbol: symbol, opcode: null, operand: null, comment: null };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -197,9 +197,9 @@ describe('LineScanner', () => {
     const symbol: Capture = { text: 'alpha@bravo', position: 0 };
     const text = symbol.text;
     const expected: Line = { isValid: true, lineNumber: null, symbol: symbol, opcode: null, operand: null, comment: null };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -209,9 +209,9 @@ describe('LineScanner', () => {
     const symbol: Capture = { text: 'alpha?', position: 0 };
     const text = symbol.text;
     const expected: Line = { isValid: true, lineNumber: null, symbol: symbol, opcode: null, operand: null, comment: null };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -222,9 +222,9 @@ describe('LineScanner', () => {
     const symbol: Capture = { text: 'alpha', position: 5 };
     const text = `${lineNumber} ${symbol.text}`;
     const expected: Line = { isValid: true, lineNumber: lineNumber, symbol: symbol, opcode: null, operand: null, comment: null };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -235,9 +235,9 @@ describe('LineScanner', () => {
     const symbol: Capture = { text: 'alpha', position: 5 };
     const text = `${lineNumber}\t${symbol.text}\t`;
     const expected: Line = { isValid: true, lineNumber: lineNumber, symbol: symbol, opcode: null, operand: null, comment: null };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -247,9 +247,9 @@ describe('LineScanner', () => {
     const opcode: Capture = { text: 'clra', position: 1 };
     const text = ` ${opcode.text}`;
     const expected: Line = { isValid: true, lineNumber: null, symbol: null, opcode: opcode, operand: null, comment: null };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -260,9 +260,9 @@ describe('LineScanner', () => {
     const opcode: Capture = { text: 'clra', position: 1 };
     const text = `${symbol}+${opcode.text}`;
     const expected: Line = { isValid: false, lineNumber: null, symbol: null, opcode: null, operand: null, comment: null };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -272,9 +272,9 @@ describe('LineScanner', () => {
     const opcode: Capture = { text: 'clra', position: 1 };
     const text = ` ${opcode.text}\t`;
     const expected: Line = { isValid: true, lineNumber: null, symbol: null, opcode: opcode, operand: null, comment: null };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -284,9 +284,9 @@ describe('LineScanner', () => {
     const opcode: Capture = { text: '.globl', position: 1 };
     const text = ` ${opcode.text}\t`;
     const expected: Line = { isValid: true, lineNumber: null, symbol: null, opcode: opcode, operand: null, comment: null };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -297,9 +297,9 @@ describe('LineScanner', () => {
     const comment: Capture = { text: 'Clear the index', position: opcode.position + opcode.text.length + 1 };
     const text = ` ${opcode.text}\t${comment.text}`;
     const expected: Line = { isValid: true, lineNumber: null, symbol: null, opcode: opcode, operand: null, comment: comment };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -310,9 +310,9 @@ describe('LineScanner', () => {
     const comment: Capture = { text: 'Otherwise', position: opcode.position + opcode.text.length + 1 };
     const text = ` ${opcode.text}\t${comment.text}`;
     const expected: Line = { isValid: true, lineNumber: null, symbol: null, opcode: opcode, operand: null, comment: comment };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -323,9 +323,9 @@ describe('LineScanner', () => {
     const operand: Capture = { text: '#hello', position: opcode.position + opcode.text.length + 1 };
     const text = ` ${opcode.text}\t${operand.text}`;
     const expected: Line = { isValid: true, lineNumber: null, symbol: null, opcode: opcode, operand: operand, comment: null };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -338,9 +338,9 @@ describe('LineScanner', () => {
     const operand: Capture = { text: '#hello', position: opcode.position + opcode.text.length + 1 };
     const text = `${lineNumber} \t${opcode.text}\t${operand.text}`;
     const expected: Line = { isValid: true, lineNumber: lineNumber, symbol: null, opcode: opcode, operand: operand, comment: null };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -353,9 +353,9 @@ describe('LineScanner', () => {
     const operand: Capture = { text: '#hello', position: opcode.position + opcode.text.length + 1 };
     const text = `${lineNumber} ${symbol.text}\t${opcode.text}\t${operand.text}`;
     const expected: Line = { isValid: true, lineNumber: lineNumber, symbol: symbol, opcode: opcode, operand: operand, comment: null };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -368,9 +368,9 @@ describe('LineScanner', () => {
     const operand: Capture = { text: '#hello', position: opcode.position + opcode.text.length + 1 };
     const text = `${lineNumber} ${symbol.text}\t${opcode.text}\t${operand.text}\t`;
     const expected: Line = { isValid: true, lineNumber: lineNumber, symbol: symbol, opcode: opcode, operand: operand, comment: null };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -384,9 +384,9 @@ describe('LineScanner', () => {
     const comment: Capture = { text: 'Start of the loop', position: operand.position + operand.text.length + 1 };
     const text = `${lineNumber} ${symbol.text}\t${opcode.text}\t${operand.text}\t${comment.text}`;
     const expected: Line = { isValid: true, lineNumber: lineNumber, symbol: symbol, opcode: opcode, operand: operand, comment: comment };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -397,9 +397,9 @@ describe('LineScanner', () => {
     const operand: Capture = { text: '$c5,$cf,$cf,$cf,$cf,$cf,$cf,$cf,$cf,$ca', position: opcode.position + opcode.text.length + 1 };
     const text = `\t${opcode.text}\t${operand.text}`;
     const expected: Line = { isValid: true, lineNumber: null, symbol: null, opcode: opcode, operand: operand, comment: null };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -410,9 +410,9 @@ describe('LineScanner', () => {
     const operand: Capture = { text: '/This is a test|/', position: opcode.position + opcode.text.length + 1 };
     const text = `\t${opcode.text}\t${operand.text}`;
     const expected: Line = { isValid: true, lineNumber: null, symbol: null, opcode: opcode, operand: operand, comment: null };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -423,9 +423,9 @@ describe('LineScanner', () => {
     const operand: Capture = { text: 'This is an error!', position: opcode.position + opcode.text.length + 1 };
     const text = `\t${opcode.text}\t${operand.text}`;
     const expected: Line = { isValid: true, lineNumber: null, symbol: null, opcode: opcode, operand: operand, comment: null };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -435,9 +435,9 @@ describe('LineScanner', () => {
     const comment: Capture = { text: '* This is a comment', position: 0 };
     const text = comment.text;
     const expected: Line = { isValid: true, lineNumber: null, symbol: null, opcode: null, operand: null, comment: comment };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -447,9 +447,9 @@ describe('LineScanner', () => {
     const comment: Capture = { text: '* This is a comment', position: 2 };
     const text = `\t\t${comment.text}`;
     const expected: Line = { isValid: true, lineNumber: null, symbol: null, opcode: null, operand: null, comment: comment };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -460,9 +460,9 @@ describe('LineScanner', () => {
     const comment:Capture = { text: '* This is a comment', position: 6};
     const text = `${lineNumber} ${comment.text}`;
     const expected: Line = { isValid: true, lineNumber: lineNumber, symbol: null, opcode: null, operand: null, comment: comment };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -474,9 +474,9 @@ describe('LineScanner', () => {
     const comment: Capture = { text: '# This is a comment', position: symbol.position + symbol.text.length + 2 };
     const text = `${lineNumber} ${symbol.text}\t\t${comment.text}`;
     const expected: Line = { isValid: true, lineNumber: lineNumber, symbol: symbol, opcode: null, operand: null, comment: comment };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -487,9 +487,9 @@ describe('LineScanner', () => {
     const comment: Capture = { text: '# This is a comment', position: symbol.position + symbol.text.length + 2 };
     const text = `${symbol.text}\t\t${comment.text}`;
     const expected: Line = { isValid: true, lineNumber: null, symbol: symbol, opcode: null, operand: null, comment: comment };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -501,9 +501,9 @@ describe('LineScanner', () => {
     const comment: Capture = { text: '# This is a comment', position: opcode.position + opcode.text.length + 1 };
     const text = `${symbol.text}\t${opcode.text}\t${comment.text}`;
     const expected: Line = { isValid: true, lineNumber: null, symbol: symbol, opcode: opcode, operand: null, comment: comment };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
@@ -516,12 +516,47 @@ describe('LineScanner', () => {
     const text = `${symbol.text}\t${opcode.text}\t${comment.text}`;
 
     const expected: Line = { isValid: true, lineNumber: null, symbol: symbol, opcode: opcode, operand: null, comment: comment };
-    const lexer = new LineParser();
+    const parser = new LineParser();
 
-    const line = lexer.getLine(text);
+    const line = parser.getLine(text);
 
     expect(line).toBeTruthy();
     expect(line).toEqual(expected);
+  });
+
+  it('getTokens: empty text returns empty TokenSequence', () => {
+    const expected: TokenSequence = [];
+    
+    const parser = new LineParser();
+
+    const sequence = parser.getTokens('');
+
+    expect(sequence).toBeTruthy();
+    expect(sequence).toEqual(expected);
+  });
+
+  it('getTokens: small decimal number returns number', () => {
+    
+    const text = '5';
+    const expected: TokenSequence = [ { capture: { text: text, position: 0 }, kind: TokenKind.Number } ];
+    const parser = new LineParser();
+
+    const sequence = parser.getTokens(text);
+
+    expect(sequence).toBeTruthy();
+    expect(sequence).toEqual(expected);
+  });
+
+  it('getTokens: large decimal number returns number', () => {
+    
+    const text = '65535';
+    const expected: TokenSequence = [ { capture: { text: text, position: 0 }, kind: TokenKind.Number } ];
+    const parser = new LineParser();
+
+    const sequence = parser.getTokens(text);
+
+    expect(sequence).toBeTruthy();
+    expect(sequence).toEqual(expected);
   });
 
 });

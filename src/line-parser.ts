@@ -1,18 +1,6 @@
-import { delimitedStringPseudoOps, inherentOpcodes, inherentPseudoOps, stringPseudoOps } from './line-common';
+import { Capture, Line, 
+         delimitedStringPseudoOps, inherentOpcodes, inherentPseudoOps, stringPseudoOps, TokenSequence, TokenKind, Token } from './line-common';
 
-export class Capture {
-  public text: string = '';
-  public position: number = 0;
-}
-
-export class Line {
-  public isValid: boolean = true;
-  public lineNumber: number | null = null;
-  public symbol: Capture | null = null;
-  public opcode: Capture | null = null;
-  public operand: Capture | null = null;
-  public comment: Capture | null = null;
-}
 
 export class LineParser {
 
@@ -186,6 +174,33 @@ export class LineParser {
     return line;
   }
 
+  public getTokens(text: string): TokenSequence {
+    const sequence: TokenSequence = [];
+    const length = text.length;
+    let pos = 0;
+
+    if (text.trim() === '') {
+      return [];
+    }
+
+    while(pos < length) {
+      let ch = text[pos];
+
+      if (this.isDigit(ch)) {
+        let capture: Capture = { text: '', position: pos };
+
+        while (pos < length && this.isDigit(ch)) {
+          capture.text += ch;
+          ch = text[++pos];
+        }
+
+        sequence.push(new Token(capture, TokenKind.Number));
+      }
+
+    }
+    return sequence;
+  }
+
   public isLetter(ch: string): boolean {
     return ((ch[0] >= 'a' && ch[0] <= 'z') || (ch[0] >= 'A' && ch[0] <= 'Z'));
   }
@@ -201,4 +216,5 @@ export class LineParser {
   public isCommentStarter(ch: string): boolean {
     return ch[0] === '*' || ch[0] === ';';
   }
+
 }

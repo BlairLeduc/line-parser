@@ -18,7 +18,7 @@ export const inherentOpcodes = new Set([
   'sync',
   'tsta', 'tstb', 'tstd', 'tste', 'tstf', 'tstw',
   'reorg', 'else', 'endc', 'emod', 'endm', 'endstruct', 'ends', 'endsection', 'endsect',
-  'extern', 'external', 'import', 'export', '.globl', 'extdep', 
+  'extern', 'external', 'import', 'export', '.globl', 'extdep',
 ]);
 
 export const operandOpcodes = new Set([
@@ -50,21 +50,21 @@ export const operandOpcodes = new Set([
   'stbt',
   'suba', 'subb', 'subd', 'sube', 'subf', 'subr', 'subw',
   'tfm', 'tim', 'tst',
-  '.4byte', '.area', '.ascii', '.ascis', '.asciz', '.blkb', '.byte', 
-  '.db', '.ds', '.dw', '.quad', '.rs', '.str', '.strs', '.strz', '.word', 
-  '*pragma', '*pragmapop', '*pragmapush', 
-  'align', 'end', 'equ', 'error', 
-  'fcb', 'fcc', 'fcn', 'fcs', 'fdb', 'fill', 
-  'fqb', 'ifdef', 'ifeq', 'ifge', 'ifgt', 'ifle', 'iflt', 'ifndef', 'ifne', 'ifpragma', 
-  'import', 'include', 'includebin', 'macro', 'mod', 'nam', 'org', 'os9', 'pragma', 
-  'rmb', 'rmd', 'rmq', 'sect', 'section', 'set', 'setdp', 'struct', 'use', 'warning', 
-  'zmb', 'zmd', 'zmq', 
+  '.4byte', '.area', '.ascii', '.ascis', '.asciz', '.blkb', '.byte',
+  '.db', '.ds', '.dw', '.quad', '.rs', '.str', '.strs', '.strz', '.word',
+  '*pragma', '*pragmapop', '*pragmapush',
+  'align', 'end', 'equ', 'error',
+  'fcb', 'fcc', 'fcn', 'fcs', 'fdb', 'fill',
+  'fqb', 'ifdef', 'ifeq', 'ifge', 'ifgt', 'ifle', 'iflt', 'ifndef', 'ifne', 'ifpragma',
+  'import', 'include', 'includebin', 'macro', 'mod', 'nam', 'org', 'os9', 'pragma',
+  'rmb', 'rmd', 'rmq', 'sect', 'section', 'set', 'setdp', 'struct', 'use', 'warning',
+  'zmb', 'zmd', 'zmq',
 ]);
 
 export const delimitedStringPseudoOps = new Set([
   'fcc', 'fcn', 'fcs',
   '.ascii', '.asciz', '.ascis',
-  '.str', '.strz', '.strs', 
+  '.str', '.strz', '.strs',
 ]);
 
 export const stringPseudoOps = new Set([
@@ -77,46 +77,57 @@ export const filePseudoOps = new Set([
 
 export const inherentPseudoOps = new Set([
   'reorg', 'else', 'endc', 'emod', 'endm', 'endstruct', 'ends', 'endsection', 'endsect',
-  'extern', 'external', 'import', 'export', '.globl', 'extdep', 
+  'extern', 'external', 'import', 'export', '.globl', 'extdep',
 ]);
 
 export const pseudoOps = new Set([
-  '.4byte', '.area', '.ascii', '.ascis', '.asciz', '.blkb', '.byte', 
-  '.db', '.ds', '.dw', '.quad', '.rs', '.str', '.strs', '.strz', '.word', 
-  '*pragma', '*pragmapop', '*pragmapush', 
-  'align', 'end', 'equ', 'error', 
-  'fcb', 'fcc', 'fcn', 'fcs', 'fdb', 'fill', 
-  'fqb', 'ifdef', 'ifeq', 'ifge', 'ifgt', 'ifle', 'iflt', 'ifndef', 'ifne', 'ifpragma', 
-  'import', 'include', 'includebin', 'macro', 'mod', 'nam', 'org', 'os9', 'pragma', 
-  'rmb', 'rmd', 'rmq', 'sect', 'section', 'set', 'setdp', 'struct', 'use', 'warning', 
-  'zmb', 'zmd', 'zmq', 
+  '.4byte', '.area', '.ascii', '.ascis', '.asciz', '.blkb', '.byte',
+  '.db', '.ds', '.dw', '.quad', '.rs', '.str', '.strs', '.strz', '.word',
+  '*pragma', '*pragmapop', '*pragmapush',
+  'align', 'end', 'equ', 'error',
+  'fcb', 'fcc', 'fcn', 'fcs', 'fdb', 'fill',
+  'fqb', 'ifdef', 'ifeq', 'ifge', 'ifgt', 'ifle', 'iflt', 'ifndef', 'ifne', 'ifpragma',
+  'import', 'include', 'includebin', 'macro', 'mod', 'nam', 'org', 'os9', 'pragma',
+  'rmb', 'rmd', 'rmq', 'sect', 'section', 'set', 'setdp', 'struct', 'use', 'warning',
+  'zmb', 'zmd', 'zmq',
 ]);
 
 
 export enum TokenKind {
-    Constant,
-    Variable,
-    Type,
-    Symbol,
-    Reference,
-    OpCode,
-    String,
-    Number,
-    Operator,
-    Comment,
-    FileName,
-  }
+  Constant,
+  Variable,
+  Type,
+  Symbol,
+  Reference,
+  OpCode,
+  String,
+  Number,
+  Operator,
+  Comment,
+  FileName,
+}
 
-  export class Token {
-    constructor(
-      public text: string,
-      public char: number,
-      public length: number,
-      public kind: TokenKind,
-      public isValid: boolean = true,
-      public isLocal: boolean = false,
-    ) {}
-  }
 
-  export type TokenSequence = Token[];
-  
+export class Capture {
+  public text: string = '';
+  public position: number = 0;
+}
+
+
+export class Line {
+  public isValid: boolean = true;
+  public lineNumber: number | null = null;
+  public symbol: Capture | null = null;
+  public opcode: Capture | null = null;
+  public operand: Capture | null = null;
+  public comment: Capture | null = null;
+}
+
+export class Token {
+  constructor(
+    public capture: Capture,
+    public kind: TokenKind
+  ) { }
+}
+
+export type TokenSequence = Token[];
